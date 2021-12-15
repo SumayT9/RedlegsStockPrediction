@@ -1,7 +1,6 @@
 const.py
 .DS_Store
 .idea
-/models
 .pyc
 __pycache__/
 eval_rnn_model.py
