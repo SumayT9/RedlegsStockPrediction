@@ -8,9 +8,13 @@ import random
 import pandas as pd
 import unicodedata
 import re
+from tqdm import tqdm
 
+END = '<END>'
+UNK = '<UNK>'
+PAD = '<PAD>'
 
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def preprocess(tweet):
@@ -172,6 +176,39 @@ def train_model(model, num_epochs, data_loader, optimizer, loss_func):
           e_acc += acc.item()
       print('[TRAIN]\t Epoch: {:2d}\t Loss: {:.4f}\t Train Accuracy: {:.2f}%'.format(epoch+1, e_loss/len(data_loader), 100*e_acc/len(data_loader)))
   print('Model Trained')
+
+
+def evaluate(model, data_loader, criterion):
+    """
+    Summary: Evaluates RNN model performance on test dataset
+
+    Inputs: model - RNN model to be evaluated
+            data_loader - DataLoader object used to pass in testing data
+            criterion - 
+    """
+    print('Evaluating model performance on the test dataset')
+    model.eval()
+    epoch_loss = 0
+    epoch_acc = 0
+    all_predictions = []
+    for texts, labels in tqdm(data_loader):
+        texts = texts.to(device)
+        labels = labels.to(device)
+        
+        output = model(texts)
+        acc = accuracy(output, labels)
+        pred = output.argmax(dim=1)
+        all_predictions.append(pred)
+        
+        loss = criterion(output, labels)
+        
+        epoch_loss += loss.item()
+        epoch_acc += acc.item()
+    full_acc = 100*epoch_acc/len(data_loader)
+    full_loss = epoch_loss/len(data_loader)
+    print('[TEST]\t Loss: {:.4f}\t Accuracy: {:.2f}%'.format(full_loss, full_acc))
+    predictions = torch.cat(all_predictions)
+    return full_acc, full_acc, predictions
 
 def accuracy(output, labels):
   """
